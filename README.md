@@ -91,18 +91,15 @@ docker run -p 9327:9327 -v ./config:/config jamotion/s3-exporter
 
 ### Using docker-compose
 
+Currently the code will not be reloaded when it changes, so run the container
+interactively:
+
 ```
-version: '2'
-services:
-  s3:
-    image: jamotion/s3-exporter
-    container_name: s3exporter
-    volumes:
-      - ./config:/config:ro
-    restart: unless-stopped
-    ports:
-      - 9327:9327
-    network_mode: host
+docker-compose run --service-ports s3
 ```
 
-Put the config file into ./config folder
+Then run the Python exporter process:
+
+```
+python exporter.py /config/config.yml
+``` 
