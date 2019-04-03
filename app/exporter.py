@@ -92,7 +92,11 @@ class S3Collector(object):
                 labels=['folder'],
         )
         for folder in config.get('folders'):
-            prefix = folder[-1] == '/' and folder or '{0}/'.format(folder)
+            # Don't set a prefix if we want to look in the root of the bucket
+            if folder == '':
+                prefix = None
+            else:
+                prefix = folder[-1] == '/' and folder or '{0}/'.format(folder)
             result = self._s3.bucket_list(config.get('bucket'), prefix)
             files = result['list']
             if pattern:
