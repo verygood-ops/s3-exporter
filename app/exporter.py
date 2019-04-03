@@ -68,28 +68,28 @@ class S3Collector(object):
                 's3_latest_file_timestamp',
                 'Last modified timestamp(milliseconds) for latest file in '
                 'folder',
-                labels=['folder', 'file'],
+                labels=['folder', 'bucket'],
         )
         oldest_file_timestamp_gauge = GaugeMetricFamily(
                 's3_oldest_file_timestamp',
                 'Last modified timestamp(milliseconds) for oldest file in '
                 'folder',
-                labels=['folder', 'file'],
+                labels=['folder', 'bucket'],
         )
         latest_file_size_gauge = GaugeMetricFamily(
                 's3_latest_file_size',
                 'Size in bytes for latest file in folder',
-                labels=['folder', 'file'],
+                labels=['folder', 'bucket'],
         )
         oldest_file_size_gauge = GaugeMetricFamily(
                 's3_oldest_file_size',
                 'Size in bytes for latest file in folder',
-                labels=['folder', 'file'],
+                labels=['folder', 'bucket'],
         )
         file_count_gauge = GaugeMetricFamily(
                 's3_file_count',
                 'Numbeer of existing files in folder',
-                labels=['folder'],
+                labels=['folder', 'bucket'],
         )
         for folder in config.get('folders'):
             # Don't set a prefix if we want to look in the root of the bucket
@@ -97,7 +97,8 @@ class S3Collector(object):
                 prefix = None
             else:
                 prefix = folder[-1] == '/' and folder or '{0}/'.format(folder)
-            result = self._s3.bucket_list(config.get('bucket'), prefix)
+            bucket = config.get('bucket')
+            result = self._s3.bucket_list(bucket, prefix)
             files = result['list']
             if pattern:
                 files = [f for f in files if fnmatch.fnmatch(f['Key'], pattern)]
@@ -105,30 +106,31 @@ class S3Collector(object):
             if not files:
                 continue
             last_file = files[-1]
-            last_file_name = last_file['Key']
             oldest_file = files[0]
-            oldest_file_name = oldest_file['Key']
     
             latest_modified = string_to_timestamp(last_file['LastModified'])
             oldest_modified = string_to_timestamp(oldest_file['LastModified'])
 
-            file_count_gauge.add_metric([folder], len(files))
+            file_count_gauge.add_metric([
+                folder,
+                bucket
+            ], len(files))
             
             latest_file_timestamp_gauge.add_metric([
                 folder,
-                last_file_name,
+                bucket
             ], latest_modified)
             oldest_file_timestamp_gauge.add_metric([
                 folder,
-                oldest_file_name,
+                bucket
             ], oldest_modified)
             latest_file_size_gauge.add_metric([
                 folder,
-                last_file_name,
+                bucket
             ], int(last_file['Size']))
             oldest_file_size_gauge.add_metric([
                 folder,
-                oldest_file_name,
+                bucket
             ], int(oldest_file['Size']))
             
         yield latest_file_timestamp_gauge
