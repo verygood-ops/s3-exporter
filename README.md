@@ -34,19 +34,22 @@ Metrics will be available at http://localhost:9327
 ```sh
 # HELP s3_latest_file_timestamp Last modified timestamp(milliseconds) for latest file in folder
 # TYPE s3_latest_file_timestamp gauge
-s3_latest_file_timestamp{file="backup/backup_2018-02-25.zip",folder="backup"} 1519524066157.0
+s3_latest_file_timestamp{bucket="bucket-name",folder="backup"} 1519524066157.0
 # HELP s3_oldest_file_timestamp Last modified timestamp(milliseconds) for oldest file in folder
 # TYPE s3_oldest_file_timestamp gauge
-s3_oldest_file_timestamp{file="backup/backup_2018-02-19.zip",folder="backup"} 1519005663854.0
+s3_oldest_file_timestamp{bucket="bucket-name",folder="backup"} 1519005663854.0
 # HELP s3_latest_file_size Size in bytes for latest file in folder
 # TYPE s3_latest_file_size gauge
-s3_latest_file_size{file="backup/backup_2018-02-25.zip",folder="backup"} 290355072.0
+s3_latest_file_size{bucket="bucket-name",folder="backup"} 290355072.0
 # HELP s3_oldest_file_size Size in bytes for latest file in folder
 # TYPE s3_oldest_file_size gauge
-s3_oldest_file_size{file="backup/backup_2018-02-19.zip",folder="backup"} 281699347.0
+s3_oldest_file_size{bucket="bucket-name",folder="backup"} 281699347.0
 # HELP s3_file_count Numbeer of existing files in folder
 # TYPE s3_file_count gauge
-s3_file_count{folder="backup"} 7.0
+s3_file_count{bucket="bucket-name", folder="backup"} 7.0
+# HELP s3_success Displays whether or not the listing of S3 was a success
+# TYPE s3_success gauge
+s3_success{bucket="bucket-name",folder="backup"} 1.0
 ```
 
 ## Alert Example
