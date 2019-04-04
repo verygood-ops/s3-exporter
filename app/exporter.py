@@ -29,6 +29,7 @@ import yaml
 import logging
 from S3.Config import Config as S3Config
 from S3.S3 import S3
+from S3.Exceptions import S3Error
 
 DEFAULT_PORT = 9327
 DEFAULT_LOG_LEVEL = 'info'
@@ -91,6 +92,14 @@ class S3Collector(object):
                 'Numbeer of existing files in folder',
                 labels=['folder', 'bucket'],
         )
+        success_gauge = GaugeMetricFamily(
+                's3_success',
+                'Displays whether or not the listing of S3 was a success',
+                labels=['folder', 'bucket'],
+        )
+
+        success = True
+
         for folder in config.get('folders'):
             # Don't set a prefix if we want to look in the root of the bucket
             if folder == '':
@@ -98,13 +107,23 @@ class S3Collector(object):
             else:
                 prefix = folder[-1] == '/' and folder or '{0}/'.format(folder)
             bucket = config.get('bucket')
-            result = self._s3.bucket_list(bucket, prefix)
+
+            logging.debug('Listing contents of bucket: "{0}" with prefix: "{1}"'.format(bucket, prefix))
+
+            try:
+                result = self._s3.bucket_list(bucket, prefix)
+            except S3Error as err:
+                success = False
+                logging.error('Error listing contents of bucket: "{0}" with prefix: "{1}" error: "{2}"'.format(bucket, prefix, err))
+                continue
             files = result['list']
+
             if pattern:
                 files = [f for f in files if fnmatch.fnmatch(f['Key'], pattern)]
             files = sorted(files, key=lambda s: s['LastModified'])
             if not files:
                 continue
+
             last_file = files[-1]
             oldest_file = files[0]
     
@@ -133,11 +152,17 @@ class S3Collector(object):
                 bucket
             ], int(oldest_file['Size']))
             
+        success_gauge.add_metric([
+            folder,
+            bucket
+        ], int(success))
+
         yield latest_file_timestamp_gauge
         yield oldest_file_timestamp_gauge
         yield latest_file_size_gauge
         yield oldest_file_size_gauge
         yield file_count_gauge
+        yield success_gauge
 
 
 if __name__ == "__main__":
