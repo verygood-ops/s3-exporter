@@ -1,0 +1,11 @@
+version: '3'
+services:
+  s3:
+    build: .
+    entrypoint: /bin/sh
+    working_dir: /opt/prometheus-s3-exporter
+    volumes:
+      - ./app:/opt/prometheus-s3-exporter:rw
+      - ./config:/config:ro
+    ports:
+      - 9327:9327
