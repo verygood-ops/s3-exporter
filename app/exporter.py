@@ -92,7 +92,11 @@ class S3Collector(object):
                 labels=['folder'],
         )
         for folder in config.get('folders'):
-            prefix = folder[-1] == '/' and folder or '{0}/'.format(folder)
+            # Don't set a prefix if we want to look in the root of the bucket
+            if folder == '':
+                prefix = None
+            else:
+                prefix = folder[-1] == '/' and folder or '{0}/'.format(folder)
             result = self._s3.bucket_list(config.get('bucket'), prefix)
             files = result['list']
             if pattern:
@@ -140,7 +144,7 @@ if __name__ == "__main__":
     parser.add_argument('config_file_path', help='Path of the config file')
     args = parser.parse_args()
     with open(args.config_file_path) as config_file:
-        config = yaml.load(config_file)
+        config = yaml.load(config_file, Loader=yaml.FullLoader)
         log_level = config.get('log_level', DEFAULT_LOG_LEVEL)
         logging.basicConfig(
                 format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',

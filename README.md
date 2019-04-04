@@ -19,6 +19,14 @@ folders:
 
 ```
 
+If you would like metrics on objects in the root of the bucket use an empty
+folder, i.e.:
+
+```
+folders:
+  - ""
+```
+
 ## Metrics
 
 Metrics will be available at http://localhost:9327
