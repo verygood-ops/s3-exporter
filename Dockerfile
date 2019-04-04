@@ -1,10 +1,16 @@
-FROM python:2.7.14-alpine3.6
-MAINTAINER Renzo Meister <rm@jamotion.ch>
+FROM python:2.7.16-alpine3.9
 
-COPY app /opt/prometheus-s3-exporter
-RUN apk add --no-cache gcc libffi-dev musl-dev openssl-dev perl py-pip python python-dev
-RUN pip install -r /opt/prometheus-s3-exporter/requirements.txt
+WORKDIR /opt/prometheus-s3-exporter
+COPY app/requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
 
+RUN adduser -D -H exporter
+
+COPY --chown=nobody app ./
+RUN chmod u-w -R ./; python -m compileall .
+
+USER exporter
 EXPOSE 9327
 VOLUME "/config"
-ENTRYPOINT ["python", "/opt/prometheus-s3-exporter/exporter.py", "/config/config.yml"]
+ENTRYPOINT ["python", "./exporter.py"]
+CMD ["/config/config.yml"]
