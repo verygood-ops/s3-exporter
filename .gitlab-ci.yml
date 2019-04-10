@@ -1,0 +1,46 @@
+stages:
+  - lint
+  - build
+  - publish
+
+variables:
+  GITLAB_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME
+  GITLAB_IMAGE_LATEST: $CI_REGISTRY_IMAGE:latest
+
+dockerfile:
+  stage: lint
+  image:
+    name: hadolint/hadolint:v1.16.2-debian
+    entrypoint: [""]
+  script:
+    - hadolint ./Dockerfile
+  tags:
+    - nano
+
+docker-image:
+  stage: build
+  services:
+    - docker:dind
+  before_script:
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+  script:
+    - docker pull $GITLAB_IMAGE || true
+    - docker build . -t $GITLAB_IMAGE --cache-from $GITLAB_IMAGE_LATEST
+    - docker push $GITLAB_IMAGE
+  tags:
+    - dind
+
+to-gitlab:
+  stage: publish
+  services:
+    - docker:dind
+  before_script:
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+  script:
+    - docker pull $GITLAB_IMAGE
+    - docker tag $GITLAB_IMAGE $GITLAB_IMAGE_LATEST
+    - docker push $GITLAB_IMAGE_LATEST
+  tags:
+    - dind
+  only:
+    - tags
