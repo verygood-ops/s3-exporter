@@ -1,7 +1,13 @@
 stages:
   - lint
   - build
+  - scan
   - publish
+
+include:
+  - project: infra/anchore-deployment
+    file: "/ci_templates/container_scanning.yml"
+    ref: v0
 
 variables:
   GITLAB_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME
@@ -29,6 +35,18 @@ docker-image:
     - docker push $GITLAB_IMAGE
   tags:
     - dind
+
+# Submit image to anchore for vulnerability scanning
+image-scan:
+  stage: scan
+  variables:
+    FLUKE_API_URL: https://fluke.infra.five.ai
+    FRONTEND_API_URL: https://container-scanning.infra.five.ai
+  script:
+    - container-scanner $GITLAB_IMAGE
+  extends: .container_scanning
+  tags:
+    - nano
 
 to-gitlab:
   stage: publish
