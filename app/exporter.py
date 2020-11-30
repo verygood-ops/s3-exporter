@@ -19,53 +19,34 @@
 #
 #    Created by renzo on 23.02.18.
 #
+import argparse
 import fnmatch
+import logging
 import time
-from dateutil import parser as dtparser
+
+import boto3
+import botocore.exceptions
+import yaml
 from prometheus_client import start_http_server
 from prometheus_client.core import GaugeMetricFamily, REGISTRY
-import argparse
-import yaml
-import logging
-from S3.Config import Config as S3Config
-from S3.S3 import S3
-from S3.Exceptions import S3Error
 
 DEFAULT_PORT = 9327
 DEFAULT_LOG_LEVEL = 'info'
 
 
-def string_to_timestamp(string_value):
-    datetime_value = dtparser.parse(string_value)
-    return time.mktime(datetime_value.timetuple()) * 1000 + datetime_value.microsecond / 1000
-
-
 class S3Collector(object):
     def __init__(self, config):
         self._config = config
-        self._s3config = S3Config()
         access_key = config.get('access_key', False)
-        if access_key:
-            self._s3config.update_option('access_key', access_key)
         secret_key = config.get('secret_key', False)
-        if secret_key:
-            self._s3config.update_option('secret_key', secret_key)
-        host_base = config.get('host_base', False)
-        if host_base:
-            self._s3config.update_option('host_base', host_base)
-        host_bucket = config.get('host_bucket', False)
-        if host_bucket:
-            self._s3config.update_option('host_bucket', host_bucket)
-        use_https = config.get('use_https', True)
-        self._s3config.update_option('use_https', use_https)
-        signature = config.get('signature_v2', True)
-        self._s3config.update_option('signature_v2', signature)
+        if access_key and secret_key:
+            self._client = boto3.client(
+                    's3',
+                    aws_access_key_id=access_key,
+                    aws_secret_access_key=secret_key)
+        else:
+            self._client = boto3.client('s3')
 
-        if len(self._s3config.access_key)==0:
-            self._s3config.role_config()
-
-        self._s3 = S3(self._s3config)
-        
     def collect(self):
         pattern = self._config.get('pattern', False)
             
@@ -105,22 +86,33 @@ class S3Collector(object):
         success = True
 
         for folder in config.get('folders'):
-            # Don't set a prefix if we want to look in the root of the bucket
+            bucket = config.get('bucket')
+
             if folder == '':
                 prefix = None
             else:
                 prefix = folder[-1] == '/' and folder or '{0}/'.format(folder)
-            bucket = config.get('bucket')
 
             logging.debug('Listing contents of bucket: "{0}" with prefix: "{1}"'.format(bucket, prefix))
 
             try:
-                result = self._s3.bucket_list(bucket, prefix)
-            except S3Error as err:
+                if prefix == None or prefix == '/':
+                    result = self._client.list_objects_v2(Bucket=bucket)
+                else:
+                    result = self._client.list_objects_v2(Bucket=bucket,
+                                                          Prefix=prefix)
+
+            except botocore.exceptions.ClientError as err:
                 success = False
                 logging.error('Error listing contents of bucket: "{0}" with prefix: "{1}" error: "{2}"'.format(bucket, prefix, err))
                 continue
-            files = result['list']
+
+            if 'Contents' in result:
+                files = result['Contents']
+            else:
+                success = False
+                logging.error('Error not content found in bucket: "{0}" with prefix: "{1}"'.format(bucket, prefix))
+                continue
 
             if pattern:
                 files = [f for f in files if fnmatch.fnmatch(f['Key'], pattern)]
@@ -129,10 +121,11 @@ class S3Collector(object):
                 continue
 
             last_file = files[-1]
+            last_file_name = last_file['Key']
             oldest_file = files[0]
-    
-            latest_modified = string_to_timestamp(last_file['LastModified'])
-            oldest_modified = string_to_timestamp(oldest_file['LastModified'])
+            oldest_file_name = oldest_file['Key']
+            latest_modified = last_file['LastModified'].timestamp()
+            oldest_modified = oldest_file['LastModified'].timestamp()
 
             file_count_gauge.add_metric([
                 folder,

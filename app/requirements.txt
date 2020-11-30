@@ -1,4 +1,4 @@
-s3cmd
+boto3
 prometheus_client
 pyYAML
 python-dateutil
