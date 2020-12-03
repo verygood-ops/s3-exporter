@@ -5,12 +5,8 @@ Prometheus metrics exporter for S3 Storage
 ## Config example
 
 ```yml
-access_key: "your-access-key"
-secret_key: "your-secret-key"
-host_base: "sos-ch-dk-2.exo.io"
-host_bucket: "%(bucket)s.sos-ch-dk-2.exo.io"
-use_https: True
-signature_v2: True
+access_key: "optional-your-access-key"
+secret_key: "optional-your-secret-key"
 bucket: "bucket-name"
 pattern: "*.zip"
 folders:
@@ -18,6 +14,9 @@ folders:
   - "nextcloudbackup"
 
 ```
+
+You can omit `access_key` and `secret_key` to use credentials from
+environment settings, see the [Boto3 documentation](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html) for more info.
 
 If you would like metrics on objects in the root of the bucket use an empty
 folder, i.e.:
@@ -61,7 +60,7 @@ groups:
 - name: host.rules
   rules:
   - alert: backup_is_too_old
-    expr: (time()) - s3_latest_file_timestamp / 1000 > 108000
+    expr: (time()) - s3_latest_file_timestamp > 108000
     for: 5m
     labels:
       severity: critical

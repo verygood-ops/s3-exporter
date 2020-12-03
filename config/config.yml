@@ -1,9 +1,6 @@
+# access_key and secret_key are optional
 access_key: "your-access-key"
 secret_key: "your-secret-key"
-host_base: "sos-ch-dk-2.exo.io"
-host_bucket: "%(bucket)s.sos-ch-dk-2.exo.io"
-use_https: True
-signature_v2: True
 bucket: "bucket-name"
 pattern: "*.zip"
 folders:
