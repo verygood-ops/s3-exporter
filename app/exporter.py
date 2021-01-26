@@ -33,23 +33,30 @@ from prometheus_client.core import GaugeMetricFamily, REGISTRY
 DEFAULT_PORT = 9327
 DEFAULT_LOG_LEVEL = 'info'
 
+def to_seconds(date):
+    return time.mktime(date.timetuple())
 
 class S3Collector(object):
     def __init__(self, config):
         self._config = config
         access_key = config.get('access_key', False)
         secret_key = config.get('secret_key', False)
+        endpoint_url = config.get('host_base', False)
+        verify = config.get('use_https', False)
+
         if access_key and secret_key:
             self._client = boto3.client(
                     's3',
                     aws_access_key_id=access_key,
-                    aws_secret_access_key=secret_key)
+                    aws_secret_access_key=secret_key,
+                    endpoint_url=endpoint_url,
+                    verify=verify)
         else:
             self._client = boto3.client('s3')
 
     def collect(self):
         pattern = self._config.get('pattern', False)
-            
+
         latest_file_timestamp_gauge = GaugeMetricFamily(
                 's3_latest_file_timestamp',
                 'Last modified timestamp(milliseconds) for latest file in '
@@ -124,14 +131,14 @@ class S3Collector(object):
             last_file_name = last_file['Key']
             oldest_file = files[0]
             oldest_file_name = oldest_file['Key']
-            latest_modified = last_file['LastModified'].timestamp()
-            oldest_modified = oldest_file['LastModified'].timestamp()
+            latest_modified = to_seconds(last_file['LastModified'])
+            oldest_modified = to_seconds(oldest_file['LastModified'])
 
             file_count_gauge.add_metric([
                 folder,
                 bucket
             ], len(files))
-            
+
             latest_file_timestamp_gauge.add_metric([
                 folder,
                 bucket
@@ -148,7 +155,7 @@ class S3Collector(object):
                 folder,
                 bucket
             ], int(oldest_file['Size']))
-            
+
         success_gauge.add_metric([
             folder,
             bucket
@@ -168,7 +175,7 @@ if __name__ == "__main__":
     parser.add_argument('config_file_path', help='Path of the config file')
     args = parser.parse_args()
     with open(args.config_file_path) as config_file:
-        config = yaml.load(config_file, Loader=yaml.FullLoader)
+        config = yaml.safe_load(config_file)
         log_level = config.get('log_level', DEFAULT_LOG_LEVEL)
         logging.basicConfig(
                 format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
