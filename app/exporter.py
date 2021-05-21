@@ -61,33 +61,33 @@ class S3Collector(object):
                 's3_latest_file_timestamp',
                 'Last modified timestamp(milliseconds) for latest file in '
                 'folder',
-                labels=['folder', 'bucket'],
+                labels=['folder', 'file'],
         )
         oldest_file_timestamp_gauge = GaugeMetricFamily(
                 's3_oldest_file_timestamp',
                 'Last modified timestamp(milliseconds) for oldest file in '
                 'folder',
-                labels=['folder', 'bucket'],
+                labels=['folder', 'file'],
         )
         latest_file_size_gauge = GaugeMetricFamily(
                 's3_latest_file_size',
                 'Size in bytes for latest file in folder',
-                labels=['folder', 'bucket'],
+                labels=['folder', 'file'],
         )
         oldest_file_size_gauge = GaugeMetricFamily(
                 's3_oldest_file_size',
                 'Size in bytes for latest file in folder',
-                labels=['folder', 'bucket'],
+                labels=['folder', 'file'],
         )
         file_count_gauge = GaugeMetricFamily(
                 's3_file_count',
                 'Number of existing files in folder',
-                labels=['folder', 'bucket'],
+                labels=['folder', 'file'],
         )
         success_gauge = GaugeMetricFamily(
                 's3_success',
                 'Displays whether or not the listing of S3 was a success',
-                labels=['folder', 'bucket'],
+                labels=['folder'],
         )
 
         success = True
@@ -136,29 +136,28 @@ class S3Collector(object):
 
             file_count_gauge.add_metric([
                 folder,
-                bucket
+                last_file_name
             ], len(files))
 
             latest_file_timestamp_gauge.add_metric([
                 folder,
-                bucket
+                last_file_name
             ], latest_modified)
             oldest_file_timestamp_gauge.add_metric([
                 folder,
-                bucket
+                last_file_name
             ], oldest_modified)
             latest_file_size_gauge.add_metric([
                 folder,
-                bucket
+                last_file_name
             ], int(last_file['Size']))
             oldest_file_size_gauge.add_metric([
                 folder,
-                bucket
+                last_file_name
             ], int(oldest_file['Size']))
 
         success_gauge.add_metric([
-            folder,
-            bucket
+            folder
         ], int(success))
 
         yield latest_file_timestamp_gauge
