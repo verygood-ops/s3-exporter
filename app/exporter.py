@@ -125,18 +125,18 @@ class S3Collector(object):
                 continue
 
             if 'Contents' in result:
-                files = result['Contents']
+                found_files = result['Contents']
             else:
                 success = False
                 logging.error('Error not content found in bucket: "{0}" with prefix: "{1}"'.format(bucket, prefix))
                 continue
 
             for pattern in patterns:
-                files = [f for f in files if fnmatch.fnmatch(f['Key'], pattern)]
+                files = [f for f in found_files if fnmatch.fnmatch(f['Key'], pattern)]
                 files = sorted(files, key=lambda s: s['LastModified'])
                 if not files:
                     continue
-
+                print(files)
                 last_file = files[-1]
                 last_file_name = last_file['Key']
                 oldest_file = files[0]
