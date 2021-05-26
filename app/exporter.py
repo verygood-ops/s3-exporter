@@ -23,10 +23,12 @@ import argparse
 import datetime
 import fnmatch
 import logging
+import re
 import time
 
 import boto3
 import botocore.exceptions
+import dateparser
 import yaml
 from prometheus_client import start_http_server
 from prometheus_client.core import GaugeMetricFamily, REGISTRY
@@ -63,6 +65,9 @@ class S3Collector(object):
         if not isinstance(patterns, list):
             patterns = [patterns, ]
         smart_folder_date = self._config.get('smart_folder_date', False)
+        smart_pattern_date = self._config.get('smart_pattern_date', False)
+        if smart_pattern_date or smart_folder_date:
+            base_date = dateparser.parse(self._config.get('base_date', 'today'))
 
         latest_file_timestamp_gauge = GaugeMetricFamily(
                 's3_latest_file_timestamp',
@@ -108,35 +113,53 @@ class S3Collector(object):
                 prefix = folder[-1] == '/' and folder or '{0}/'.format(folder)
 
             if smart_folder_date:
-                prefix = datetime.datetime.strftime(datetime.datetime.now(), prefix)
+                prefix = datetime.datetime.strftime(base_date, prefix)
+
+            if prefix.endswith('/*/'):
+                prefix = re.sub(r'(.*)\/\*\/$', r'\1', prefix)
+                get_all_objs = True
+            else:
+                get_all_objs = False
 
             logging.debug('Listing contents of bucket: "{0}" with prefix: "{1}"'.format(bucket, prefix))
+            token = None
+            found_files = []
+            while True:
 
-            try:
-                if prefix is None or prefix == '/':
-                    result = self._client.list_objects_v2(Bucket=bucket)
+                try:
+                    kw = {
+                        'Bucket': bucket,
+                    }
+                    if prefix and prefix != "/":
+                        kw.update({'Prefix': prefix})
+                    if token:
+                        kw.update({'ContinuationToken': token})
+                    result = self._client.list_objects_v2(**kw)
+                except botocore.exceptions.ClientError as err:
+                    success = False
+                    logging.error('Error listing contents of bucket: "{0}" with prefix: "{1}" error: "{2}"'.format(bucket, prefix, err))
+                    continue
+
+                if 'Contents' in result:
+                    found_files += result['Contents']
+                    if result['IsTruncated'] and get_all_objs:
+                        token = result['NextContinuationToken']
+                        continue
+                    else:
+                        break
                 else:
-                    result = self._client.list_objects_v2(Bucket=bucket,
-                                                          Prefix=prefix)
-
-            except botocore.exceptions.ClientError as err:
-                success = False
-                logging.error('Error listing contents of bucket: "{0}" with prefix: "{1}" error: "{2}"'.format(bucket, prefix, err))
-                continue
-
-            if 'Contents' in result:
-                found_files = result['Contents']
-            else:
-                success = False
-                logging.error('Error not content found in bucket: "{0}" with prefix: "{1}"'.format(bucket, prefix))
-                continue
-
+                    success = False
+                    logging.error('Error no content found in bucket: "{0}" with prefix: "{1}"'.format(bucket, prefix))
+                    break
+            print(found_files)
             for pattern in patterns:
+                if smart_pattern_date:
+                    pattern = datetime.datetime.strftime(base_date, pattern)
+                    print('PATTERN', pattern)
                 files = [f for f in found_files if fnmatch.fnmatch(f['Key'], pattern)]
                 files = sorted(files, key=lambda s: s['LastModified'])
                 if not files:
                     continue
-                print(files)
                 last_file = files[-1]
                 last_file_name = last_file['Key']
                 oldest_file = files[0]
