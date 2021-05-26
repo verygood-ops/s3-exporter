@@ -151,11 +151,9 @@ class S3Collector(object):
                     success = False
                     logging.error('Error no content found in bucket: "{0}" with prefix: "{1}"'.format(bucket, prefix))
                     break
-            print(found_files)
             for pattern in patterns:
                 if smart_pattern_date:
                     pattern = datetime.datetime.strftime(base_date, pattern)
-                    print('PATTERN', pattern)
                 files = [f for f in found_files if fnmatch.fnmatch(f['Key'], pattern)]
                 files = sorted(files, key=lambda s: s['LastModified'])
                 if not files:
