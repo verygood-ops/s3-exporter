@@ -3,6 +3,7 @@
 #
 #    Jamotion GmbH, Your Odoo implementation partner
 #    Copyright (C) 2004-2010 Jamotion GmbH.
+#    Copyright (C) 2020 Very Good Security, Inc.
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Affero General Public License as
