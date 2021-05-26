@@ -20,6 +20,7 @@
 #    Created by renzo on 23.02.18.
 #
 import argparse
+import datetime
 import fnmatch
 import logging
 import time
@@ -33,10 +34,13 @@ from prometheus_client.core import GaugeMetricFamily, REGISTRY
 DEFAULT_PORT = 9327
 DEFAULT_LOG_LEVEL = 'info'
 
+
 def to_seconds(date):
     return time.mktime(date.timetuple())
 
+
 class S3Collector(object):
+
     def __init__(self, config):
         self._config = config
         access_key = config.get('access_key', False)
@@ -55,7 +59,10 @@ class S3Collector(object):
             self._client = boto3.client('s3')
 
     def collect(self):
-        pattern = self._config.get('pattern', False)
+        patterns = self._config.get('patterns', ["*"])
+        if not isinstance(patterns, list):
+            patterns = [patterns, ]
+        smart_folder_date = self._config.get('smart_folder_date', False)
 
         latest_file_timestamp_gauge = GaugeMetricFamily(
                 's3_latest_file_timestamp',
@@ -100,10 +107,13 @@ class S3Collector(object):
             else:
                 prefix = folder[-1] == '/' and folder or '{0}/'.format(folder)
 
+            if smart_folder_date:
+                prefix = datetime.datetime.strftime(datetime.datetime.now(), prefix)
+
             logging.debug('Listing contents of bucket: "{0}" with prefix: "{1}"'.format(bucket, prefix))
 
             try:
-                if prefix == None or prefix == '/':
+                if prefix is None or prefix == '/':
                     result = self._client.list_objects_v2(Bucket=bucket)
                 else:
                     result = self._client.list_objects_v2(Bucket=bucket,
@@ -121,44 +131,44 @@ class S3Collector(object):
                 logging.error('Error not content found in bucket: "{0}" with prefix: "{1}"'.format(bucket, prefix))
                 continue
 
-            if pattern:
+            for pattern in patterns:
                 files = [f for f in files if fnmatch.fnmatch(f['Key'], pattern)]
-            files = sorted(files, key=lambda s: s['LastModified'])
-            if not files:
-                continue
+                files = sorted(files, key=lambda s: s['LastModified'])
+                if not files:
+                    continue
 
-            last_file = files[-1]
-            last_file_name = last_file['Key']
-            oldest_file = files[0]
-            oldest_file_name = oldest_file['Key']
-            latest_modified = to_seconds(last_file['LastModified'])
-            oldest_modified = to_seconds(oldest_file['LastModified'])
+                last_file = files[-1]
+                last_file_name = last_file['Key']
+                oldest_file = files[0]
+                oldest_file_name = oldest_file['Key']
+                latest_modified = to_seconds(last_file['LastModified'])
+                oldest_modified = to_seconds(oldest_file['LastModified'])
 
-            file_count_gauge.add_metric([
-                folder,
-                last_file_name
-            ], len(files))
+                file_count_gauge.add_metric([
+                    folder,
+                    last_file_name
+                ], len(files))
 
-            latest_file_timestamp_gauge.add_metric([
-                folder,
-                last_file_name
-            ], latest_modified)
-            oldest_file_timestamp_gauge.add_metric([
-                folder,
-                last_file_name
-            ], oldest_modified)
-            latest_file_size_gauge.add_metric([
-                folder,
-                last_file_name
-            ], int(last_file['Size']))
-            oldest_file_size_gauge.add_metric([
-                folder,
-                last_file_name
-            ], int(oldest_file['Size']))
+                latest_file_timestamp_gauge.add_metric([
+                    folder,
+                    last_file_name
+                ], latest_modified)
+                oldest_file_timestamp_gauge.add_metric([
+                    folder,
+                    last_file_name
+                ], oldest_modified)
+                latest_file_size_gauge.add_metric([
+                    folder,
+                    last_file_name
+                ], int(last_file['Size']))
+                oldest_file_size_gauge.add_metric([
+                    folder,
+                    oldest_file_name
+                ], int(oldest_file['Size']))
 
-        success_gauge.add_metric([
-            folder
-        ], int(success))
+                success_gauge.add_metric([
+                    folder
+                ], int(success))
 
         yield latest_file_timestamp_gauge
         yield oldest_file_timestamp_gauge

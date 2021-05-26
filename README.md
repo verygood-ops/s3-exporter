@@ -8,7 +8,8 @@ Prometheus metrics exporter for S3 Storage
 access_key: "optional-your-access-key"
 secret_key: "optional-your-secret-key"
 bucket: "bucket-name"
-pattern: "*.zip"
+patterns:
+  - "*.zip"
 folders:
   - "backup"
   - "nextcloudbackup"
