@@ -14,5 +14,4 @@ RUN chmod u-w -R ./; python -m compileall .
 USER exporter
 EXPOSE 9327
 VOLUME "/config"
-ENTRYPOINT ["python", "./exporter.py"]
-CMD ["/config/config.yml"]
+CMD ["python", "./exporter.py"]
