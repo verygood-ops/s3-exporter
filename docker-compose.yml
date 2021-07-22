@@ -2,7 +2,7 @@ version: '3'
 services:
   s3:
     build: .
-    entrypoint: /bin/sh
+    entrypoint: python exporter.py
     working_dir: /opt/prometheus-s3-exporter
     volumes:
       - ./app:/opt/prometheus-s3-exporter:rw

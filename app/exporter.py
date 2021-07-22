@@ -200,8 +200,9 @@ class S3Collector(object):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
             description='Expose metrics for S3 storage')
-    parser.add_argument('config_file_path', help='Path of the config file')
+    parser.add_argument('config_file_path', nargs='?', help='Path of the config file', default='/config/config.yml')
     args = parser.parse_args()
+    print(args.config_file_path)
     with open(args.config_file_path) as config_file:
         config = yaml.safe_load(config_file)
         log_level = config.get('log_level', DEFAULT_LOG_LEVEL)
