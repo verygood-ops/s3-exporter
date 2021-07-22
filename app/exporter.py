@@ -35,7 +35,7 @@ from prometheus_client import start_http_server
 from prometheus_client.core import GaugeMetricFamily, REGISTRY
 
 DEFAULT_PORT = 9327
-DEFAULT_LOG_LEVEL = 'debug'
+DEFAULT_LOG_LEVEL = 'info'
 
 
 def to_seconds(date):
