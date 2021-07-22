@@ -35,7 +35,7 @@ from prometheus_client import start_http_server
 from prometheus_client.core import GaugeMetricFamily, REGISTRY
 
 DEFAULT_PORT = 9327
-DEFAULT_LOG_LEVEL = 'info'
+DEFAULT_LOG_LEVEL = 'debug'
 
 
 def to_seconds(date):
@@ -49,7 +49,7 @@ class S3Collector(object):
         access_key = config.get('access_key', False)
         secret_key = config.get('secret_key', False)
         endpoint_url = config.get('host_base', False)
-        verify = config.get('use_https', False)
+        verify = config.get('use_https', True)
 
         if access_key and secret_key:
             self._client = boto3.client(
