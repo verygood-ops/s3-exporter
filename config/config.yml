@@ -1,6 +1,4 @@
-# access_key and secret_key are optional
-access_key: "your-access-key"
-secret_key: "your-secret-key"
+log_level: debug
 bucket: "bucket-name"
 pattern: "*.zip"
 folders:

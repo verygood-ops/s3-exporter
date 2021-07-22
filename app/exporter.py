@@ -49,7 +49,7 @@ class S3Collector(object):
         access_key = config.get('access_key', False)
         secret_key = config.get('secret_key', False)
         endpoint_url = config.get('host_base', False)
-        verify = config.get('use_https', False)
+        verify = config.get('use_https', True)
 
         if access_key and secret_key:
             self._client = boto3.client(
@@ -118,9 +118,6 @@ class S3Collector(object):
 
             if prefix.endswith('/*/'):
                 prefix = re.sub(r'(.*)\/\*\/$', r'\1', prefix)
-                get_all_objs = True
-            else:
-                get_all_objs = False
 
             logging.debug('Listing contents of bucket: "{0}" with prefix: "{1}"'.format(bucket, prefix))
             token = None
@@ -143,7 +140,7 @@ class S3Collector(object):
 
                 if 'Contents' in result:
                     found_files += result['Contents']
-                    if result['IsTruncated'] and get_all_objs:
+                    if result['IsTruncated']:
                         token = result['NextContinuationToken']
                         continue
                     else:
