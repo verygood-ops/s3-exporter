@@ -91,7 +91,7 @@ groups:
 
 ```sh
 pip install -r app/requirements.txt
-python app/exporter.py config/config.yml
+aws-profile -p prod/vault python app/exporter.py config/config.yml
 ```
 
 ### Using docker
@@ -113,4 +113,4 @@ Then run the Python exporter process:
 
 ```
 python exporter.py /config/config.yml
-``` 
+```
