@@ -1,3 +1,4 @@
+log_level: debug
 bucket: "bucket-name"
 pattern: "*.zip"
 folders:
