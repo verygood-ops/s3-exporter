@@ -63,6 +63,7 @@ class S3Collector(object):
 
     def collect(self):
         patterns = self._config.get('patterns', ["*"])
+        delimiter = self._config.get('delimiter', "")
         if not isinstance(patterns, list):
             patterns = [patterns, ]
         smart_folder_date = self._config.get('smart_folder_date', False)
@@ -127,6 +128,7 @@ class S3Collector(object):
                 try:
                     kw = {
                         'Bucket': bucket,
+                        'Delimiter': delimiter
                     }
                     if prefix and prefix != "/":
                         kw.update({'Prefix': prefix})

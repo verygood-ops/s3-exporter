@@ -27,6 +27,13 @@ folders:
   - ""
 ```
 
+If you would like to cut results (i.e. w/o subfolders) use delimiter within pattern, see [AWS docs](https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectsV2.html#API_ListObjectsV2_ResponseSyntax) for explanations, for example:
+```
+patterns:
+  - "some/long/path"
+delimiter: "/"
+```
+
 ## Metrics
 
 Metrics will be available at http://localhost:9327
