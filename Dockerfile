@@ -1,4 +1,4 @@
-FROM python:3.9.0-alpine3.12
+FROM python:3.12.3-alpine3.19
 
 WORKDIR /opt/prometheus-s3-exporter
 COPY app/requirements.txt ./
